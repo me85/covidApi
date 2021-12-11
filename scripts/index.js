@@ -1,9 +1,9 @@
-//   const API_URL =
-//     "https://intense-mesa-62220.herokuapp.com/https://restcountries.herokuapp.com/api/v1/region/asia";
-
 // const continents = [{ Asia: 0 }, { Africa: 1 }, { Europe: 2 }, { Americas: 3 }, { Oceania: 4 }];
-const API_COVID = "http://corona-api.com/countries";
+// import { myChart } from "./drewTable.js";
+const AmericasButton = document.querySelector("#Americas");
+const AmericasDiv = document.querySelector(".americasDiv");
 
+const API_COVID = "http://corona-api.com/countries/";
 const API_PROXY = "https://intense-mesa-62220.herokuapp.com/";
 let continents = ["Asia", "Africa", "Europe", "Americas", "Oceania"];
 
@@ -12,82 +12,100 @@ async function fetchContinents() {
     `${API_PROXY}https://restcountries.herokuapp.com/api/v1/region/${continents[3]}`
   );
   const countries = await response.json();
-
   return countries;
 }
 
 fetchContinents().then((countries) => {
   countries; // fetched countries
   countriesByCca2 = countries.map((country) => country.cca2);
-
-  fetchcountries(countriesByCca2);
+  const urlCountryArray = creatCovidCountryURL(countriesByCca2);
+  fetchCountries(urlCountryArray);
 });
 
-async function fetchcountries(countriesByCca2) {
-  console.log(countriesByCca2);
-
+async function fetchCountries(urlCountryArray) {
+  futchAllCovidCountry(urlCountryArray);
   try {
-    const response = await fetch(`${API_PROXY}${API_COVID}`);
+    const response = await fetch(urlCountryArray[1]);
     const eachCountry = await response.json();
-    return eachCountry;
   } catch (err) {
     console.error(err);
   }
 }
 
-fetchcountries().then((eachCountry, countriesByCca2) => {
-  const arrayCovidPerContinent = [];
-  function findCommonElement(eachCountry, countriesByCca2) {
-    // console.log(countriesByCca2);
-    // Loop for array1
-    for (let i = 0; i < eachCountry.length; i++) {
-      // Loop for array2
-      for (let j = 0; j < countriesByCca2.length; j++) {
-        // Compare the element of each and
-        // every element from both of the
-        // arrays
-        if (eachCountry[i] === countriesByCca2[j]) {
-          // Return if common element found
-          arrayCovidPerContinent.push(array1[i]);
+function creatCovidCountryURL(continentCca2Array) {
+  const map1 = continentCca2Array.map((cca2Element) => `${API_PROXY}${API_COVID}${cca2Element}`);
+  return map1;
+  //   console.log(map1);
+}
+
+async function futchAllCovidCountry(result) {
+  for (let urlCovidCountry of result) {
+    try {
+      const response = await fetch(urlCovidCountry);
+      //   console.log(urlCovidCountry);
+      const eachCountry = await response.json();
+      //   console.log(eachCountry);
+      const americaDivElement = document.createElement("div");
+      americaDivElement.dataset.type = eachCountry.data.name;
+      americaDivElement.classList.add("americaDiv");
+      americaDivElement.innerText = eachCountry.data.name;
+      AmericasDiv.appendChild(americaDivElement);
+
+      // return eachCountry;
+      americaDivElement.addEventListener("click", () => {
+        const data = eachCountryCovidInformation(eachCountry);
+
+        function addData(chart, data) {
+          // chart.data.labels.push(label);
+          chart.data.datasets.forEach((dataset) => {
+            dataset.data.push(
+              //   data.active,
+              data.confirmed,
+              data.new_confirmed,
+              data.new_deaths,
+              data.deaths,
+              data.recovered,
+              data.critical
+            );
+          });
+          console.log(chart.data.datasets);
+          chart.update();
         }
-      }
+
+        addData(myChart, data);
+
+        function removeData(chart) {
+          //   chart.data.labels.pop(label);
+          chart.data.datasets.forEach((dataset) => {
+            dataset.data.pop();
+          });
+          chart.update();
+        }
+
+        removeData(myChart);
+      });
+    } catch (err) {
+      console.error(err);
     }
-
-    return arrayCovidPerContinent;
+    // console.log(urlCovidCountry);
   }
-  console.log("this is from find common element", findCommonElement(eachCountry, countriesByCca2));
+}
 
-  // fetched countries
-  //   console.log(eachCountry);
-  //   if (Country.data.code === "AS")
-  // Function definition with passing two arrays
-  //   const arrayCovidPerContinent = [];
-  //   function findCommonElement(eachCountry, countriesByCca2) {
-  //     console.log(eachCountry);
-  //     // Loop for array1
-  //     for (let i = 0; i < eachCountry.length; i++) {
-  //       // Loop for array2
-  //       for (let j = 0; j < countriesByCca2.length; j++) {
-  //         // Compare the element of each and
-  //         // every element from both of the
-  //         // arrays
-  //         if (eachCountry[i] === countriesByCca2[j]) {
-  //           // Return if common element found
-  //           arrayCovidPerContinent.push(array1[i]);
-  //         }
-  //       }
-  //     }
-  //     // Return if no common element exist
-  //     return arrayCovidPerContinent;
-  //   }
-  //   console.log(findCommonElement(eachCountry, countriesByCca2));
-  //   console.log(eachCountry.data.name);
-  //   console.log(eachCountry.data.timeline[0].active);
-  //   console.log(eachCountry.data.timeline[0].confirmed);
-  //   console.log(eachCountry.data.timeline[0].new_confirmed);
-  //   console.log(eachCountry.data.timeline[0].new_deaths);
-  //   console.log(eachCountry.data.timeline[0].deaths);
-  //   console.log(eachCountry.data.timeline[0].recovered);
-  //   console.log(eachCountry.data.timeline[0].recovered);
-  //   console.log(eachCountry.data.latest_data.critical);
-});
+// futchAllCovidCountry().then((eachCountry) => {
+//   eachCountry;
+// });
+
+function eachCountryCovidInformation(eachCountry) {
+  let countryCovidObject = {
+    name: eachCountry.data.name,
+    active: eachCountry.data.timeline[0].active,
+    confirmed: eachCountry.data.timeline[0].confirmed,
+    new_confirmed: eachCountry.data.timeline[0].new_confirmed,
+    new_deaths: eachCountry.data.timeline[0].new_deaths,
+    deaths: eachCountry.data.timeline[0].deaths,
+    recovered: eachCountry.data.timeline[0].recovered,
+    critical: eachCountry.data.latest_data.critical,
+  };
+  //   console.log(countryCovidObject);
+  return countryCovidObject;
+}
